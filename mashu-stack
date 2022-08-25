@@ -1,0 +1,72 @@
+#!/bin/bash
+dirname="$(dirname -- "$(realpath "$0")")"
+args="$dirname/mashu-args"
+if [[ ! -s "$args" ]]; then
+	echo "$0: unable to find target mashu-args '$args'" 1>&2
+	exit 1
+fi
+. "$args"
+
+# validate inputs
+let count="$#"
+
+if [[ -z "$format" || "$height" -eq 0 || -z "$output" || "$width" -eq 0 ]]; then
+	echo "$0: must supply acodec, bitrate, end, format, fps, gopsize, heigth, output, samplerate, start, vcodec, and width" 1>&2
+	echo "$acodec" "$bitrate" "$end" "$format" "$fps" "$gopsize" "$height" "$output" "$samplerate" "$start" "$vcodec" "$width"
+	exit 1
+fi
+if ! [[ "$output" =~ \.${format,,}$ ]]; then
+	echo "$0: output file extension does not match specified format ('$format')" 1>&2
+	exit 1
+fi
+
+# handle nostacking
+if [[ "$count" -eq 1 ]]; then
+	cp --reflink=auto "$1" "$output"
+	exit $?
+fi
+
+function filterMatrix {
+	n="$(units -t "ceil(sqrt($count))")"
+	# layout
+	for ((h=0;h<n;++h)); do
+		for ((w=0;w<n;++w)); do
+			if [ $((w+h)) -ne 0 ]; then
+				printf '|'
+			fi
+			if [ $w -eq 0 ]; then
+				printf 0
+			else
+				for ((wi=0;wi<w;++wi)); do
+					if [ $wi -ne 0 ]; then
+						printf '+'
+					fi
+					printf 'w%d' $wi
+				done
+			fi
+			printf '_'
+			if [ $h -eq 0 ]; then
+				printf 0
+			else
+				for ((hi=0;hi<h;++hi)); do
+					if [ $hi -ne 0 ]; then
+						printf '+'
+					fi
+					printf 'h%d' $hi
+				done
+			fi
+
+		done
+	done
+}
+
+renderCommand=( render )
+while [[ "$#" -gt 0 ]]; do
+	renderCommand+=( -i "$1" )
+	shift
+done
+renderCommand+=( -filter_complex "xstack=inputs=${count}:layout=$(filterMatrix "$count"),scale=${width}x${height}" )
+renderCommand+=( -filter_complex "amix=inputs=${count},loudnorm" )
+renderCommand+=( -ac 2 "$output" )
+"${renderCommand[@]}"
+exit $?

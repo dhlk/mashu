@@ -1,0 +1,122 @@
+#!/bin/bash
+dirname="$(dirname -- "$(realpath "$0")")"
+args="$dirname/mashu-args"
+if [[ ! -s "$args" ]]; then
+	echo "$0: unable to find target mashu-args '$args'" 1>&2
+	exit 1
+fi
+. "$args"
+
+# TODO support image input for video
+# validate inputs
+if [[ -z "$acodec" || "$bitrate" -eq 0 || -z "$endTime" || -z "$format" || "$fps" -eq 0 || "$gopsize" -eq 0 || "$height" -eq 0 || -z "$output" || "$samplerate" -eq 0 || -z "$startTime" || -z "$vcodec" || "$width" -eq 0 ]]; then
+	echo "$0: must supply acodec, bitrate, end, format, fps, gopsize, heigth, output, samplerate, start, vcodec, and width" 1>&2
+	echo "$acodec" "$bitrate" "$end" "$format" "$fps" "$gopsize" "$height" "$output" "$samplerate" "$start" "$vcodec" "$width"
+	exit 1
+fi
+if ! [[ "$output" =~ \.${format,,}$ ]]; then
+	echo "$0: output file extension does not match specified format ('$format')" 1>&2
+	exit 1
+fi
+
+# duration
+duration="$(printf '%g\n' $(bc<<<"${endTime}-${startTime}"))"
+if [[ "$duration" =~ ^\- ]]; then
+	echo "$0: negative duration (start after end)" 1>&2
+	exit 1
+fi
+
+# construct the render command
+renderCommand=(render)
+filter=()
+
+# add inputs
+let inputLink=0
+let videoLink=0
+let audioLink=0
+if [[ -n "$videoPath" || -n "$imagePath" ]]; then
+	if  [[ -n "$videoPath" ]]; then
+		renderCommand+=( -ss "$startTime" -to "$endTime" -i "$videoPath" )
+	else
+		renderCommand+=( -i "$imagePath" )
+	fi
+	filters+=( "[${inputLink}:v:$videoTrack]null[v${videoLink}]" )
+
+	let inputLink=inputLink+1
+fi
+if [[ -n "$audioPath" ]]; then
+	renderCommand+=( -ss "$startTime" -to "$endTime" -i "$audioPath" )
+	filters+=( "[${inputLink}:a:$audioTrack]loudnorm,aresample=${samplerate}[a${audioLink}]" )
+	if [[ -z "$videoPath" && -z "$imagePath" ]]; then
+		filters+=( "[${inputLink}:a:$audioTrack]avectorscope=size=${width}x${height}:rate=${fps}[v${videoLink}]" )
+	fi
+
+	let inputLink=inputLink+1
+else
+	filters+=( "anullsrc=sample_rate=${samplerate}:duration=${duration}[a${audioLink}]" )
+fi
+if [[ -z "$videoPath" && -z "$imagePath" && -z "$audioPath" ]]; then
+	filters+=( "nullsrc=size=${width}x${height}:rate=${fps}:duration=${duration},geq=random(1)*255:128:128[v${videoLink}]" )
+fi
+
+# add video filters
+if [[ -n "$vfilter" ]]; then
+	filters+=( "[v${videoLink}]$vfilter[v$((videoLink+1))]" )
+	let videoLink=videoLink+1
+fi
+
+# extract and handle subtitles
+subtitleTemp=""
+if [[ -n "$subtitlePath" ]]; then
+	subtitleTemp=$(mktemp --suffix=.ass)
+	render -itsoffset "-$startTime" -i "$subtitlePath" -map "0:s:${subtitleTrack}" "$subtitleTemp.out.ass"
+	if [[ -s "$subtitleTemp.out.ass" ]]; then
+		grep -av '^[;!]' "$subtitleTemp.out.ass" > "$subtitleTemp"
+		filters+=( "[v${videoLink}]subtitles=filename='${subtitleTemp}'[v$((videoLink+1))]" )
+		let videoLink=videoLink+1
+	fi
+
+	rm "$subtitleTemp.out.ass"
+fi
+
+# scale/transcribe video
+if [[ -n "$videoPath" || -n "$imagePath" ]]; then
+	filters+=( "[v${videoLink}]scale=width=${width}:height=${height}:force_original_aspect_ratio=decrease,pad=width=${width}:height=${height}:x=(ow-iw)/2:y=(oh-ih)/2,setsar=1:1[v$((videoLink+1))]" )
+	let videoLink=videoLink+1
+fi
+
+# add stamp
+if [[ -n "$stamp" ]]; then
+	filters+=( "[v${videoLink}]drawtext=borderw=2:fontcolor=${stampColor}:fontfile=${stampFont}:fontsize=${stampSize}:text='${stamp}':x=w-tw-8:y=h-th-8[v$((videoLink+1))]" )
+	let videoLink=videoLink+1
+fi
+
+# apply filters
+renderCommand+=( -filter_complex "$(printf ';%s' "${filters[@]}" | cut -c 2- )" )
+
+# configure output
+case "$vcodec" in
+	H264)
+		renderCommand+=( -codec:v libx264 -x264-params "log-level=${LOGLEVEL}" )
+		;;
+	H265)
+		renderCommand+=( -codec:v libx265 -x265-params "log-level=${LOGLEVEL}" )
+		;;
+	VP9)
+		renderCommand+=( -codec:v vp9 )
+		;;
+esac
+renderCommand+=( -r "$fps" )
+renderCommand+=( -codec:a "${acodec,,}" -ac 2 )
+renderCommand+=( -map "[v${videoLink}]" -map "[a${audioLink}]" )
+renderCommand+=( -map_metadata -1 -map_chapters -1 )
+renderCommand+=( "$output" )
+
+"${renderCommand[@]}"
+rc=$?
+
+if [[ -n "$subtitleTemp" ]]; then
+	rm "$subtitleTemp"
+fi
+
+exit "$rc"

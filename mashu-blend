@@ -1,0 +1,23 @@
+#!/bin/bash
+if [[ "$#" -eq 0 ]]; then
+	echo "$0: supply a target blend" 1>&2
+	exit 1
+fi
+
+dirname="$(dirname -- "$(realpath "$0")")"
+blend="$dirname/$1.blend"; shift
+py="$dirname/blend.py"
+if [[ ! -s "$py" ]]; then
+	echo "$0: unable to find python module" 1>&2
+	exit 1
+fi
+if [[ ! -s "$blend" ]]; then
+	echo "$0: unable to find target blend '$blend'" 1>&2
+	exit 1
+fi
+
+if [[ "$(basename "$0")" =~ frame$ ]]; then
+	blender --background --factory-startup "$blend" --python "$py" --threads 0 --render-format PNG --render-frame 1 -- "$@"
+else
+	blender --background --factory-startup "$blend" --python "$py" --threads 0 --render-anim -- "$@"
+fi
