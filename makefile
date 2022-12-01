@@ -3,14 +3,12 @@ INTERNAL := \
 	demon-slayer-scrolls.blend \
 	mashu \
 	mashu-blend \
-	mashu-blend-frame \
-	mashu-stack
+	mashu-blend-frame
 
 BINARYLINK := \
 	mashu \
 	mashu-blend \
-	mashu-blend-frame \
-	mashu-stack
+	mashu-blend-frame
 
 all: mashu
 
