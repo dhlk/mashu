@@ -63,6 +63,7 @@ func renderClipsFromFile(path string) (err error) {
 	return
 }
 
+// assumes inputs have already been validated
 func renderClip(f Format, s Source, r Region, o Output) (err error) {
 	args := make([]string, 0)
 	filters := make([]string, 0)
