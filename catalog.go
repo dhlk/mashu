@@ -86,6 +86,21 @@ func (c Catalog) Create(s Source) (err error) {
 	defer f.Close()
 
 	e := json.NewEncoder(f)
-	err = e.Encode(s)
+	if err = e.Encode(s); err != nil {
+		os.Remove(f.Name())
+		return fmt.Errorf("mashu.Catalog.Create: unable to encode source: %w", err)
+	}
+
+	var k *os.File
+	if k, err = os.OpenFile(filepath.Join(c.path, "keys"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
+		return
+	}
+	defer k.Close()
+
+	ke := json.NewEncoder(k)
+	if err = ke.Encode(s.Key); err != nil {
+		return fmt.Errorf("mashu.Catalog.Create: unable to encode key: %w", err)
+	}
+
 	return
 }
