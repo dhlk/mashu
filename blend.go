@@ -10,7 +10,7 @@ import (
 
 var executable, executableError = os.Executable()
 
-func locateBlend(blend string) (script, path string, err error) {
+func locateBlend(blend string) (script, path Input, err error) {
 	if err = executableError; err != nil {
 		return
 	}
@@ -20,14 +20,14 @@ func locateBlend(blend string) (script, path string, err error) {
 		return
 	}
 
-	script = filepath.Join(filepath.Dir(target), "blend.py")
-	if _, err = os.Stat(script); err != nil {
+	script = Input(filepath.Join(filepath.Dir(target), "blend.py"))
+	if err = script.Valid(); err != nil {
 		err = fmt.Errorf("mashu.locateBlend: unable to locate python module ('%s'): %w", script, err)
 		return
 	}
 
-	path = filepath.Join(filepath.Dir(target), blend+".blend")
-	if _, err = os.Stat(path); err != nil {
+	path = Input(filepath.Join(filepath.Dir(target), blend+".blend"))
+	if err = path.Valid(); err != nil {
 		err = fmt.Errorf("mashu.locateBlend: unable to locate target blend ('%s'): %w", path, err)
 		return
 	}
@@ -37,14 +37,14 @@ func locateBlend(blend string) (script, path string, err error) {
 
 // assumes inputs have been validated
 func renderBlend(ctx context.Context, blendName string, f Format, o Output, a Attachments) (err error) {
-	var script, blend string
+	var script, blend Input
 	if script, blend, err = locateBlend(blendName); err != nil {
 		return
 	}
 
 	args := []string{"--background",
-		"--factory-startup", blend,
-		"--python", script,
+		"--factory-startup", string(blend),
+		"--python", string(script),
 		"--threads", "0",
 		"--render-anim", "--",
 		"-output", string(o),
@@ -62,7 +62,7 @@ func renderBlend(ctx context.Context, blendName string, f Format, o Output, a At
 		"-height", fmt.Sprintf("%d", f.Height),
 	}
 	for k, v := range a {
-		args = append(args, "-attach", k, v)
+		args = append(args, "-attach", k, string(v))
 	}
 
 	cmd := exec.CommandContext(ctx, "blender", args...)

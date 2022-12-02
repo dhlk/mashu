@@ -22,7 +22,7 @@ func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (er
 		args = append(args,
 			"-ss", fmt.Sprintf("%dus", r.Start.Microseconds()),
 			"-to", fmt.Sprintf("%dus", r.End.Microseconds()),
-			"-i", s.Video.Path)
+			"-i", string(s.Video.Path))
 		filters = append(filters, fmt.Sprintf(
 			"[%d:v:%d]null[v%d]", inputLink, s.Video.Track, videoLink))
 		inputLink += 1
@@ -32,7 +32,7 @@ func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (er
 		args = append(args,
 			"-ss", fmt.Sprintf("%dus", r.Start.Microseconds()),
 			"-to", fmt.Sprintf("%dus", r.End.Microseconds()),
-			"-i", s.Audio.Path)
+			"-i", string(s.Audio.Path))
 		filters = append(filters, fmt.Sprintf(
 			"[%d:a:%d]loudnorm,aresample=%d[a%d]", inputLink, s.Audio.Track, f.SampleRate, audioLink))
 		if s.Video == nil {
@@ -73,7 +73,7 @@ func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (er
 
 		if err = ffmpeg(ctx, "-y",
 			"-itsoffset", fmt.Sprintf("-%dus", r.Start.Microseconds()),
-			"-i", s.Subtitle.Path,
+			"-i", string(s.Subtitle.Path),
 			"-map", fmt.Sprintf("0:s:%d", s.Subtitle.Track),
 			subtitleFile.Name()); err != nil {
 			log.Printf("mashu.clip: unable to extract subtitles: %w", err)

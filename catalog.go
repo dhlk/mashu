@@ -74,16 +74,13 @@ func (c Catalog) Create(s Source) (err error) {
 		return
 	}
 
-	if _, err = os.Stat(filepath.Join(path, "source.json")); !os.IsNotExist(err) {
-		if err != nil {
-			return err
-		} else {
-			return fmt.Errorf("mashu.Catalog.Create: for key '%s': %w", s.Key, os.ErrExist)
-		}
+	sourcePath := Output(filepath.Join(path, "source.json"))
+	if err = sourcePath.Valid(); err != nil {
+		return fmt.Errorf("mashu.Catalog.Create: for key '%s': %w", s.Key, err)
 	}
 
 	var f *os.File
-	if f, err = os.Create(filepath.Join(path, "source.json")); err != nil {
+	if f, err = os.Create(string(sourcePath)); err != nil {
 		return
 	}
 	defer f.Close()

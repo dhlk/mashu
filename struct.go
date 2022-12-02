@@ -9,21 +9,35 @@ import (
 	"time"
 )
 
+type Input string
+
+func (i Input) Valid() error {
+	if len(i) == 0 {
+		return fmt.Errorf("mashu.Input.Valid: input path must be non-empty")
+	}
+	if fi, err := os.Stat(string(i)); err != nil || fi.IsDir() {
+		if err == nil && fi.IsDir() {
+			return fmt.Errorf("mashu.Input.Valid: input must not be a directory (%s): %w", i, err)
+		}
+		if os.IsNotExist(err) {
+			return fmt.Errorf("mashu.Input.Valid: input must exist (%s): %w", i, err)
+		}
+		return fmt.Errorf("mashu.Input.Valid: unable to stat input path (%s): %w", i, err)
+	}
+
+	return nil
+}
+
 type Track struct {
-	Path   string
+	Path   Input
 	Track  uint
 	Filter *string
 }
 
 func (t Track) Valid() error {
-	if _, err := os.Stat(t.Path); err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("mashu.Track.Valid: path must exist (%s): %w", t.Path, err)
-		}
-		return fmt.Errorf("mashu.Track.Valid: unable to stat track path (%s): %w", t.Path, err)
+	if err := t.Path.Valid(); err != nil {
+		return fmt.Errorf("mashu.Track.Valid: invalid input path: %w", err)
 	}
-	// TODO validate the track number is valid
-
 	if t.Filter != nil {
 		if len(*t.Filter) == 0 {
 			return fmt.Errorf("mashu.Track.Valid: non-nil filter must not be empty")
@@ -85,7 +99,7 @@ func (r TaggedRegion) Valid() error {
 
 type Stamp struct {
 	Color string
-	Font  string
+	Font  Input
 	Size  uint
 }
 
@@ -93,11 +107,8 @@ func (s Stamp) Valid() error {
 	if len(s.Color) == 0 {
 		return fmt.Errorf("mashu.Format.Valid: stamp color must not be empty")
 	}
-	if _, err := os.Stat(s.Font); err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("mashu.Format.Valid: stamp font must exist (%s): %w", s.Font, err)
-		}
-		return fmt.Errorf("mashu.Format.Valid: unable to stat stamp font (%s): %w", s.Font, err)
+	if err := s.Font.Valid(); err != nil {
+		return fmt.Errorf("mashu.Format.Valid: invalid stamp font (%s): %w", s.Font, err)
 	}
 
 	return nil
@@ -219,29 +230,37 @@ var DefaultFormat = Format{
 
 type Output string
 
-func (o Output) Valid(f Format) error {
+func (o Output) Valid() error {
 	if len(o) == 0 {
 		return fmt.Errorf("mashu.Output.Valid: output path must be non-empty")
-	}
-	if filepath.Ext(string(o)) != "."+strings.ToLower(f.Format) {
-		return fmt.Errorf("mashu.Output.Valid: output extension ('%s') much mach format ('%s')", filepath.Ext(string(o)), f.Format)
 	}
 	if _, err := os.Stat(string(o)); err == nil || !os.IsNotExist(err) {
 		if err == nil {
 			return fmt.Errorf("mashu.Output.Valid: path must not exist (%s): %w", o, os.ErrExist)
 		}
-		return fmt.Errorf("mashu.Output.Valid: unable to stat track path (%s): %w", o, err)
+		return fmt.Errorf("mashu.Output.Valid: unable to stat output path (%s): %w", o, err)
 	}
 
 	return nil
 }
 
-type Attachments map[string]string
+func (o Output) ValidVideo(f Format) error {
+	if filepath.Ext(string(o)) != "."+strings.ToLower(f.Format) {
+		return fmt.Errorf("mashu.Output.ValidVideo: output extension ('%s') much mach format ('%s')", filepath.Ext(string(o)), f.Format)
+	}
+	if err := o.Valid(); err != nil {
+		return fmt.Errorf("mashu.Output.ValidVideo: invalid output: %w", err)
+	}
+
+	return nil
+}
+
+type Attachments map[string]Input
 
 func (a Attachments) Valid() error {
 	for _, v := range a {
-		if _, err := os.Stat(v); err != nil {
-			return fmt.Errorf("mashu.Attachments.Valid: unable to stat attachment path (%s): %w", v, err)
+		if err := v.Valid(); err != nil {
+			return fmt.Errorf("mashu.Attachments.Valid: invalid attachment: %w", v, err)
 		}
 	}
 

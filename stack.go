@@ -48,12 +48,12 @@ func stackMatrix(n int) string {
 
 // assumes format and output have already been validated
 // assumes input count is a perfect square greater than one
-func renderStack(ctx context.Context, f Format, o Output, input []string) error {
+func renderStack(ctx context.Context, f Format, o Output, input []Input) error {
 	l := len(input)
 	args := make([]string, 2*l+7)
 	for i, p := range input {
 		args[2*i] = "-i"
-		args[2*i+1] = p
+		args[2*i+1] = string(p)
 	}
 	rest := 2 * l
 	args[rest], args[rest+1] = "-filter_complex", fmt.Sprintf(

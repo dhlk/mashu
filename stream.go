@@ -26,7 +26,7 @@ func (c Clip) Valid() error {
 	if err := c.Region.Valid(); err != nil {
 		return fmt.Errorf("mashu.Clip.Valid: bad region: %w", err)
 	}
-	if err := c.Output.Valid(c.Format); err != nil {
+	if err := c.Output.ValidVideo(c.Format); err != nil {
 		return fmt.Errorf("mashu.Clip.Valid: bad output: %w", err)
 	}
 
@@ -36,22 +36,22 @@ func (c Clip) Valid() error {
 type Stack struct {
 	Format Format
 	Output Output
-	Input  []string
+	Input  []Input
 }
 
 func (s Stack) Valid() error {
 	if err := s.Format.Valid(); err != nil {
 		return fmt.Errorf("mashu.Stack.Valid: bad format: %w", err)
 	}
-	if err := s.Output.Valid(s.Format); err != nil {
+	if err := s.Output.ValidVideo(s.Format); err != nil {
 		return fmt.Errorf("mashu.Stack.Valid: bad output: %w", err)
 	}
 	if len(s.Input) < 2 || len(s.Input) != int(math.Sqrt(float64(len(s.Input))))*int(math.Sqrt(float64(len(s.Input)))) {
 		return fmt.Errorf("mashu.Stack.Valid: input count must be a perfect square greater than one (%d)", len(s.Input))
 	}
 	for _, input := range s.Input {
-		if fi, err := os.Stat(input); err != nil || fi.IsDir() {
-			return fmt.Errorf("mashu.Stack.Valid: cannot stat input or is a directory ('%s'): %w", input, err)
+		if err := input.Valid(); err != nil {
+			return fmt.Errorf("mashu.Stack.Valid: invalid input ('%s'): %w", input, err)
 		}
 	}
 
@@ -69,7 +69,7 @@ func (b Blend) Valid() error {
 	if err := b.Format.Valid(); err != nil {
 		return fmt.Errorf("mashu.Blend.Valid: bad format: %w", err)
 	}
-	if err := b.Output.Valid(b.Format); err != nil {
+	if err := b.Output.ValidVideo(b.Format); err != nil {
 		return fmt.Errorf("mashu.Blend.Valid: bad output: %w", err)
 	}
 	if err := b.Attachments.Valid(); err != nil {
