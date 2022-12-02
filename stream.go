@@ -79,6 +79,31 @@ func (b Blend) Valid() error {
 	return nil
 }
 
+type Concat struct {
+	Format Format
+	Output Output
+	Input  []Input
+}
+
+func (c Concat) Valid() error {
+	if err := c.Format.Valid(); err != nil {
+		return fmt.Errorf("mashu.Concat.Valid: bad format: %w", err)
+	}
+	if err := c.Output.ValidVideo(c.Format); err != nil {
+		return fmt.Errorf("mashu.Concat.Valid: bad output: %w", err)
+	}
+	if len(c.Input) < 2 {
+		return fmt.Errorf("mashu.Concat.Valid: input count must be greater than one (%d)", len(c.Input))
+	}
+	for _, input := range c.Input {
+		if err := input.Valid(); err != nil {
+			return fmt.Errorf("mashu.Concat.Valid: invalid input ('%s'): %w", input, err)
+		}
+	}
+
+	return nil
+}
+
 func renderStreamFromFile(ctx context.Context, path string) (err error) {
 	var f *os.File
 	if f, err = os.Open(path); err != nil {
@@ -142,6 +167,23 @@ func renderStreamFromFile(ctx context.Context, path string) (err error) {
 			}
 			if err = renderBlend(ctx, blend.Name, blend.Format, blend.Output, blend.Attachments); err != nil {
 				log.Printf("mashu.renderSreamFromFile: error rendering blend (output: %#v): %v", blend.Output, err)
+				err = nil
+				continue
+			}
+		case "concat":
+			var concat Concat
+			if err = d.Decode(&concat); err != nil {
+				return
+			}
+			if err = concat.Valid(); err != nil {
+				if !os.IsNotExist(err) {
+					log.Printf("mashu.renderStreamFromFile: error validating concat (output: %#v): %v", concat.Output, err)
+				}
+				err = nil
+				continue
+			}
+			if err = renderConcat(ctx, concat.Output, concat.Input); err != nil {
+				log.Printf("mashu.renderSreamFromFile: error rendering concat (output: %#v): %v", concat.Output, err)
 				err = nil
 				continue
 			}

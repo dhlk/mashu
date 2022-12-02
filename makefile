@@ -9,6 +9,7 @@ MASHUSRC := \
 	    blend.go \
 	    catalog.go \
 	    clip.go \
+	    concat.go \
 	    ffmpeg.go \
 	    stack.go \
 	    struct.go \
