@@ -139,9 +139,6 @@ func (s Source) Valid() error {
 			return fmt.Errorf("mashu.Source.Valid: invalid subtitle specified: %w", err)
 		}
 	}
-	if len(s.Regions) == 0 {
-		return fmt.Errorf("mashu.Source.Valid: must include a region list")
-	}
 	for _, r := range s.Regions {
 		if err := r.Valid(); err != nil {
 			return fmt.Errorf("mashu.Source.Valid: bad region: %w", err)
