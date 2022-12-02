@@ -235,3 +235,15 @@ func (o Output) Valid(f Format) error {
 
 	return nil
 }
+
+type Attachments map[string]string
+
+func (a Attachments) Valid() error {
+	for _, v := range a {
+		if _, err := os.Stat(v); err != nil {
+			return fmt.Errorf("mashu.Attachments.Valid: unable to stat attachment path (%s): %w", v, err)
+		}
+	}
+
+	return nil
+}

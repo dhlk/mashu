@@ -1,14 +1,19 @@
 INTERNAL := \
 	blend.py \
 	demon-slayer-scrolls.blend \
-	mashu \
-	mashu-blend \
-	mashu-blend-frame
+	mashu
 
-BINARYLINK := \
-	mashu \
-	mashu-blend \
-	mashu-blend-frame
+BINARYLINK := mashu
+
+MASHUSRC := \
+	    blend.go \
+	    catalog.go \
+	    clip.go \
+	    ffmpeg.go \
+	    stack.go \
+	    struct.go \
+	    stream.go \
+	    main.go
 
 all: mashu
 
@@ -19,5 +24,5 @@ install:
 		ln -s /$(PREFIX)/lib/mashu/$$tg $(DESTDIR)/$(PREFIX)/bin/$$tg; \
 	done
 
-mashu: catalog.go clip.go ffmpeg.go main.go stack.go struct.go
+mashu: $(MASHUSRC)
 	gccgo -Wall -Werror $^ -lfsmap -o $@

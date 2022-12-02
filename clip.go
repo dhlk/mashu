@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -11,60 +10,8 @@ import (
 
 // TODO random generation should microsecond align; start and duration
 
-type Clip struct {
-	Format Format
-	Source Source
-	Region Region
-	Output Output
-}
-
-func (c Clip) Valid() error {
-	if err := c.Format.Valid(); err != nil {
-		return fmt.Errorf("mashu.Clip.Valid: bad format: %w", err)
-	}
-	if err := c.Source.Valid(); err != nil {
-		return fmt.Errorf("mashu.Clip.Valid: bad source: %w", err)
-	}
-	if err := c.Region.Valid(); err != nil {
-		return fmt.Errorf("mashu.Clip.Valid: bad region: %w", err)
-	}
-	if err := c.Output.Valid(c.Format); err != nil {
-		return fmt.Errorf("mashu.Clip.Valid: bad output: %w", err)
-	}
-
-	return nil
-}
-
-func renderClipsFromFile(path string) (err error) {
-	var f *os.File
-	if f, err = os.Open(path); err != nil {
-		return
-	}
-	defer f.Close()
-
-	d := json.NewDecoder(f)
-	for d.More() {
-		var clip Clip
-		if err = d.Decode(&clip); err != nil {
-			return
-		}
-		if err = clip.Valid(); err != nil {
-			log.Printf("mashu.renderClipsFromFile: error validating clip (key: %#v): %v", clip.Source.Key, err)
-			err = nil
-			continue
-		}
-		if err = renderClip(clip.Format, clip.Source, clip.Region, clip.Output); err != nil {
-			log.Printf("mashu.renderClipsFromFile: error rendering clip (key: %#v): %v", clip.Source.Key, err)
-			err = nil
-			continue
-		}
-	}
-
-	return
-}
-
 // assumes inputs have already been validated
-func renderClip(f Format, s Source, r Region, o Output) (err error) {
+func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (err error) {
 	args := make([]string, 0)
 	filters := make([]string, 0)
 
@@ -124,7 +71,7 @@ func renderClip(f Format, s Source, r Region, o Output) (err error) {
 		subtitleFile.Close()
 		defer os.Remove(subtitleFile.Name())
 
-		if err = ffmpeg(context.TODO(), "-y",
+		if err = ffmpeg(ctx, "-y",
 			"-itsoffset", fmt.Sprintf("-%dus", r.Start.Microseconds()),
 			"-i", s.Subtitle.Path,
 			"-map", fmt.Sprintf("0:s:%d", s.Subtitle.Track),
@@ -181,6 +128,6 @@ func renderClip(f Format, s Source, r Region, o Output) (err error) {
 		"-map_chapters", "-1",
 		string(o))
 
-	err = ffmpeg(context.TODO(), args...)
+	err = ffmpeg(ctx, args...)
 	return
 }

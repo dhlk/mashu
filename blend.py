@@ -91,3 +91,4 @@ if __name__ == "__main__":
 # TODO support/test multi-scene
 # TODO support text (set value, font size, font)
 # TODO validate output does not exist or is empty
+# TODO need to better support multiple aspect ratios, framerates, dynamic scene construction (e.g. different number of inputs) (require python build into the blend?)
