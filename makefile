@@ -15,7 +15,6 @@ MASHUSRC := \
 	    plangenerator.go \
 	    project.go \
 	    stack.go \
-	    stream.go \
 	    struct.go \
 	    main.go
 
