@@ -11,9 +11,12 @@ MASHUSRC := \
 	    clip.go \
 	    concat.go \
 	    ffmpeg.go \
+	    json.go \
+	    plangenerator.go \
+	    project.go \
 	    stack.go \
-	    struct.go \
 	    stream.go \
+	    struct.go \
 	    main.go
 
 all: mashu

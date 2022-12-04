@@ -57,14 +57,10 @@ func (c Catalog) Lookup(key string) (s Source, err error) {
 		return
 	}
 
-	var f *os.File
-	if f, err = os.Open(filepath.Join(path, "source.json")); err != nil {
+	if err = decodeJsonFromFile(filepath.Join(path, "source.json"), &s); err != nil {
 		return
 	}
-	defer f.Close()
 
-	d := json.NewDecoder(f)
-	err = d.Decode(&s)
 	return
 }
 

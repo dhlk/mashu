@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"math"
 	"os"
@@ -125,7 +127,7 @@ func renderStreamFromFile(ctx context.Context, path string) (err error) {
 				return
 			}
 			if err = clip.Valid(); err != nil {
-				if !os.IsNotExist(err) {
+				if !errors.Is(err, fs.ErrExist) {
 					log.Printf("mashu.renderStreamFromFile: error validating clip (key: %#v): %v", clip.Source.Key, err)
 				}
 				err = nil
@@ -142,7 +144,7 @@ func renderStreamFromFile(ctx context.Context, path string) (err error) {
 				return
 			}
 			if err = stack.Valid(); err != nil {
-				if !os.IsNotExist(err) {
+				if !errors.Is(err, fs.ErrExist) {
 					log.Printf("mashu.renderStreamFromFile: error validating stack (output: %#v): %v", stack.Output, err)
 				}
 				err = nil
@@ -159,7 +161,7 @@ func renderStreamFromFile(ctx context.Context, path string) (err error) {
 				return
 			}
 			if err = blend.Valid(); err != nil {
-				if !os.IsNotExist(err) {
+				if !errors.Is(err, fs.ErrExist) {
 					log.Printf("mashu.renderStreamFromFile: error validating blend (output: %#v): %v", blend.Output, err)
 				}
 				err = nil
@@ -176,7 +178,7 @@ func renderStreamFromFile(ctx context.Context, path string) (err error) {
 				return
 			}
 			if err = concat.Valid(); err != nil {
-				if !os.IsNotExist(err) {
+				if !errors.Is(err, fs.ErrExist) {
 					log.Printf("mashu.renderStreamFromFile: error validating concat (output: %#v): %v", concat.Output, err)
 				}
 				err = nil

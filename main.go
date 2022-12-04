@@ -23,5 +23,22 @@ func main() {
 		return
 	}
 
-	log.Print("nothing to do")
+	catalog, err := NewCatalog(*catalogPath, *catalogAlgo)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	for _, arg := range flag.Args() {
+		project, err := NewProject(arg, *catalog)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+
+		if err := project.Execute(); err != nil {
+			log.Fatal(err)
+			return
+		}
+	}
 }
