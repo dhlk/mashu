@@ -103,7 +103,7 @@ func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (er
 		stamp = *s.Stamp
 	}
 	filters = append(filters, fmt.Sprintf(
-		"[v%d]drawtext=borderw=2:fontcolor=%s:fontfile=%s:fontsize=%d:text='%s':x=w-tw-8:y=h-th-8[v%d]",
+		"[v%d]drawtext=borderw=2:fontcolor=%s:fontfile=%s:fontsize=%d:text='%s':x=w-tw-8:y=th+8[v%d]",
 		videoLink, stamp.Color, stamp.Font, stamp.Size, s.Key, videoLink+1))
 	videoLink += 1
 
