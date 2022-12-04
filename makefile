@@ -21,7 +21,7 @@ MASHUSRC := \
 
 all: mashu
 
-install:
+install: all
 	install -Dm755 -t "$(DESTDIR)/$(PREFIX)/lib/mashu" $(INTERNAL)
 	install -d $(DESTDIR)/$(PREFIX)/bin
 	for tg in $(BINARYLINK); do \
