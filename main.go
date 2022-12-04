@@ -13,6 +13,7 @@ var (
 	catalogAlgo = flag.String("catalog-algorithm", "SHA-512", "source catalog algorithm")
 	catalogMode = flag.Bool("catalog", false, "catalog inputs")
 	planMode    = flag.Bool("plan", false, "execute specified plans")
+	genMode     = flag.Bool("generate", false, "generate a plans for the specified projects")
 )
 
 func catalogMain(c Catalog, args []string) (err error) {
@@ -37,6 +38,21 @@ func planMain(c Catalog, args []string) error {
 		}
 
 		if err := project.executePlanByName(strings.TrimSuffix(filepath.Base(arg), ".json")); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func genMain(c Catalog, args []string) error {
+	for _, arg := range args {
+		project, err := NewProject(arg, c)
+		if err != nil {
+			return err
+		}
+
+		if err := project.Generate(); err != nil {
 			return err
 		}
 	}
@@ -77,6 +93,13 @@ func main() {
 
 	if *planMode {
 		if err := planMain(*catalog, flag.Args()); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	if *genMode {
+		if err := genMain(*catalog, flag.Args()); err != nil {
 			log.Fatal(err)
 		}
 		return

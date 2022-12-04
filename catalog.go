@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"fsmap"
-	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 )
@@ -21,33 +21,30 @@ func NewCatalog(path, algorithm string) (c *Catalog, err error) {
 	return
 }
 
-func (c Catalog) Keys(ctx context.Context) (o <-chan string, err error) {
+func (c Catalog) Keys(ctx context.Context) (keys []string, err error) {
 	var f *os.File
 	if f, err = os.Open(filepath.Join(c.path, "keys")); err != nil {
 		return
 	}
+	defer f.Close()
 
-	ch := make(chan string)
 	d := json.NewDecoder(f)
-	go func() {
-		defer f.Close()
-		defer close(ch)
-
-		for d.More() {
-			var s string
-			if err := d.Decode(&s); err != nil {
-				log.Printf("mashu.Catalog.Keys: error decoding keys: %v", err)
-				return
-			}
-			select {
-			case <-ctx.Done():
-				return
-			case ch <- s:
-			}
+	for d.More() {
+		var s string
+		if err = d.Decode(&s); err != nil {
+			err = fmt.Errorf("mashu.Catalog.Keys: error decoding keys: %w", err)
+			return
 		}
-	}()
+		select {
+		case <-ctx.Done():
+			err = context.Canceled
+			return
+		default:
+			keys = append(keys, s)
+		}
+	}
 
-	o = ch
+	rand.Shuffle(len(keys), func(i, j int) { keys[i], keys[j] = keys[j], keys[i] })
 	return
 }
 

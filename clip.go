@@ -22,7 +22,6 @@ func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (er
 		args = append(args,
 			"-ss", fmt.Sprintf("%dus", r.Start.Microseconds()),
 			"-to", fmt.Sprintf("%dus", r.End.Microseconds()),
-			"-stream_loop", "-1",
 			"-i", string(s.Video.Path))
 		filters = append(filters, fmt.Sprintf(
 			"[%d:v:%d]null[v%d]", inputLink, s.Video.Track, videoLink))
@@ -33,7 +32,6 @@ func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (er
 		args = append(args,
 			"-ss", fmt.Sprintf("%dus", r.Start.Microseconds()),
 			"-to", fmt.Sprintf("%dus", r.End.Microseconds()),
-			"-stream_loop", "-1",
 			"-i", string(s.Audio.Path))
 		filters = append(filters, fmt.Sprintf(
 			"[%d:a:%d]loudnorm,aresample=%d[a%d]", inputLink, s.Audio.Track, f.SampleRate, audioLink))

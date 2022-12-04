@@ -16,7 +16,10 @@ type PlanClip struct {
 	Source *Source
 }
 
-type PlanStack []string
+type PlanStack struct {
+	Input    []string
+	Duration Duration
+}
 
 type PlanBlend struct {
 	Name        string
@@ -173,8 +176,8 @@ func (p Project) executePlanConcat(concat PlanConcat, output Output) (err error)
 }
 
 func (p Project) executePlanStack(stack PlanStack, output Output) (err error) {
-	inputs := make([]Input, len(stack))
-	for i, name := range stack {
+	inputs := make([]Input, len(stack.Input))
+	for i, name := range stack.Input {
 		if err = p.executePlanByName(name); err != nil {
 			return
 		}
@@ -183,7 +186,7 @@ func (p Project) executePlanStack(stack PlanStack, output Output) (err error) {
 		}
 	}
 
-	if err = renderStack(context.TODO(), p.Format, output, inputs); err != nil {
+	if err = renderStack(context.TODO(), p.Format, output, stack.Duration, inputs); err != nil {
 		return
 	}
 
