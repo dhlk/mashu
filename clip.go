@@ -78,7 +78,7 @@ func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (er
 			"-i", string(s.Subtitle.Path),
 			"-map", fmt.Sprintf("0:s:%d", s.Subtitle.Track),
 			subtitleFile.Name()); err != nil {
-			log.Printf("mashu.clip: unable to extract subtitles: %v", err)
+			log.Printf("mashu.clip: unable to extract subtitles for '%s': %v", s.Key, err)
 			err = nil
 			os.Remove(subtitleFile.Name())
 			subtitleFile = nil
