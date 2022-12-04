@@ -57,16 +57,16 @@ func NewProject(path string, c Catalog) (p Project, err error) {
 	p.Catalog = c
 
 	if err = decodeJsonFromFile(filepath.Join(p.Path, "format.json"), &p.Format); err != nil {
-		err = fmt.Errorf("mashu.NewProject: unable to load format ('%s/format.json')", path)
+		err = fmt.Errorf("mashu.NewProject: unable to load format ('%s/format.json'): %w", path, err)
 		return
 	}
 	if err = p.Format.Valid(); err != nil {
-		err = fmt.Errorf("mashu.NewProject: invalid format ('%s/format.json')", path)
+		err = fmt.Errorf("mashu.NewProject: invalid format ('%s/format.json'): %w", path, err)
 		return
 	}
 
 	if err = decodeJsonFromFile(filepath.Join(p.Path, "plan.json"), &p.Plan); err != nil {
-		err = fmt.Errorf("mashu.NewProject: unable to load plan ('%s/plan.json')", path)
+		err = fmt.Errorf("mashu.NewProject: unable to load plan ('%s/plan.json'): %w", path, err)
 		return
 	}
 
