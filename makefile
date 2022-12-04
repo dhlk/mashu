@@ -7,11 +7,13 @@ BINARYLINK := mashu
 
 MASHUSRC := \
 	    blend.go \
+	    build.go \
 	    catalog.go \
 	    clip.go \
 	    concat.go \
 	    ffmpeg.go \
 	    json.go \
+	    m3u.go \
 	    plangenerator.go \
 	    project.go \
 	    stack.go \

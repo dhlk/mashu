@@ -31,7 +31,7 @@ func (i Input) Valid() error {
 type Track struct {
 	Path   Input
 	Track  uint
-	Filter *string
+	Filter *string `json:",omitempty"`
 }
 
 func (t Track) Valid() error {
@@ -86,7 +86,7 @@ func (r Region) Valid() error {
 
 type TaggedRegion struct {
 	Region
-	Tags []string
+	Tags []string `json:",omitempty"`
 }
 
 func (r TaggedRegion) Duration() time.Duration {
@@ -116,11 +116,11 @@ func (s Stamp) Valid() error {
 
 type Source struct {
 	Key      string
-	Video    *Track
-	Audio    *Track
-	Subtitle *Track
+	Video    *Track `json:",omitempty"`
+	Audio    *Track `json:",omitempty"`
+	Subtitle *Track `json:",omitempty"`
 	Regions  []TaggedRegion
-	Stamp    *Stamp
+	Stamp    *Stamp `json:",omitempty"`
 }
 
 func (s Source) Valid() error {

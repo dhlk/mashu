@@ -6,8 +6,9 @@ import (
 )
 
 var (
-	catalogPath = flag.String("catalog", "/var/mashu/catalog", "source catalog")
+	catalogPath = flag.String("catalog-path", "/var/mashu/catalog", "source catalog")
 	catalogAlgo = flag.String("catalog-algorithm", "SHA-512", "source catalog algorithm")
+	catalogMode = flag.Bool("catalog", false, "catalog inputs")
 )
 
 func main() {
@@ -16,6 +17,22 @@ func main() {
 	catalog, err := NewCatalog(*catalogPath, *catalogAlgo)
 	if err != nil {
 		log.Fatal(err)
+		return
+	}
+
+	if *catalogMode {
+		for _, arg := range flag.Args() {
+			var s Source
+			var err error
+			if s, err = buildSource(arg); err != nil {
+				log.Fatalf("mashu: error building source for '%s': %v", arg, err)
+				return
+			}
+			if err = catalog.Create(s); err != nil {
+				log.Fatalf("mashu: error cataloging source for '%s': %v", arg, err)
+				return
+			}
+		}
 		return
 	}
 
