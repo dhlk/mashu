@@ -29,6 +29,7 @@ func (i Input) Valid() error {
 	return nil
 }
 
+// TODO add an offset feature (for situations like unsynced a/v/s tracks)
 type Track struct {
 	Path   Input
 	Track  uint
