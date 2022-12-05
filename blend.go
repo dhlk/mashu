@@ -36,6 +36,7 @@ func locateBlend(blend string) (script, path Input, err error) {
 }
 
 // assumes inputs have been validated
+// TODO validate inputs loop when they are too short (like stack)
 func renderBlend(ctx context.Context, blendName string, f Format, o Output, a Attachments) (err error) {
 	var script, blend Input
 	if script, blend, err = locateBlend(blendName); err != nil {
