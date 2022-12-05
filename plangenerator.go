@@ -222,7 +222,7 @@ func planBlend(p Project, g PlanGeneratorParameters, blend string, pullSource fu
 			if clipName, _, err = planClip(p, g, inDuration[i], src); err != nil {
 				return
 			}
-			att[fmt.Sprintf("video.%03d")] = Input(clipName)
+			att[fmt.Sprintf("video.%03d", i+1)] = Input(clipName)
 		}
 	default:
 		err = fmt.Errorf("mashu.planBlend: invalid blend in generator configuration")
