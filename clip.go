@@ -64,6 +64,7 @@ func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (er
 
 	// extract subs
 	// TODO support pgs subtitles
+	// TODO support external/embedded subtitle fonts
 	var subtitleFile *os.File
 	if s.Subtitle != nil {
 		if subtitleFile, err = os.CreateTemp(os.TempDir(), "mashu-clip-*.ass"); err != nil {
