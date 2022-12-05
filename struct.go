@@ -82,7 +82,11 @@ func (r Region) Duration() time.Duration {
 }
 
 func (r Region) RandomTruncated(alignment Duration) Duration {
-	random := time.Duration(rand.Int63n(int64(r.Duration())))
+	diff := r.Duration()
+	if diff == 0 {
+		return Duration{r.Start.Truncate(alignment.Duration)}
+	}
+	random := time.Duration(rand.Int63n(int64(diff)))
 	return Duration{(r.Start.Duration + random).Truncate(alignment.Duration)}
 }
 
