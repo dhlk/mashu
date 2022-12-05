@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,6 +52,10 @@ type Duration struct {
 	time.Duration
 }
 
+func (d Duration) Add(u Duration) Duration {
+	return Duration{d.Duration + u.Duration}
+}
+
 func (d *Duration) UnmarshalJSON(b []byte) (err error) {
 	var s string
 	if err = json.Unmarshal(b, &s); err != nil {
@@ -74,6 +79,11 @@ type Region struct {
 
 func (r Region) Duration() time.Duration {
 	return r.End.Duration - r.Start.Duration
+}
+
+func (r Region) RandomTruncated(alignment Duration) Duration {
+	random := time.Duration(rand.Int63n(int64(r.Duration())))
+	return Duration{(r.Start.Duration + random).Truncate(alignment.Duration)}
 }
 
 func (r Region) Valid() error {

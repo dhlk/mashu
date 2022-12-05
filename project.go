@@ -26,7 +26,9 @@ type PlanBlend struct {
 	Attachments Attachments
 }
 
-type PlanConcat []string
+type PlanConcat struct {
+	Input []string
+}
 
 type Plan struct {
 	Name   string
@@ -40,7 +42,6 @@ type Project struct {
 	Path    string
 	Catalog Catalog
 	Format  Format
-	Plan    Plan
 }
 
 // TODO global stamping toggle? maybe disalbe when format has no stamp
@@ -68,16 +69,15 @@ func NewProject(path string, c Catalog) (p Project, err error) {
 		return
 	}
 
-	if err = decodeJsonFromFile(filepath.Join(p.Path, "plan.json"), &p.Plan); err != nil {
-		err = fmt.Errorf("mashu.NewProject: unable to load plan ('%s/plan.json'): %w", path, err)
-		return
-	}
-
 	return
 }
 
 func (p Project) Execute() error {
-	return p.executePlan(p.Plan)
+	var plan Plan
+	if err := decodeJsonFromFile(filepath.Join(p.Path, "plan.json"), &plan); err != nil {
+		return fmt.Errorf("mashu.Project.Execute: unable to load plan ('%s/plan.json'): %w", p.Path, err)
+	}
+	return p.executePlan(plan)
 }
 
 func (p Project) executePlanByName(name string) error {
@@ -158,8 +158,8 @@ func (p Project) executePlanClip(clip PlanClip, output Output) (err error) {
 }
 
 func (p Project) executePlanConcat(concat PlanConcat, output Output) (err error) {
-	inputs := make([]Input, len(concat))
-	for i, name := range concat {
+	inputs := make([]Input, len(concat.Input))
+	for i, name := range concat.Input {
 		if err = p.executePlanByName(name); err != nil {
 			return
 		}
