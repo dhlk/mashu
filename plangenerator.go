@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -302,17 +303,24 @@ func (p Project) Generate() (err error) {
 	}
 
 	var d Duration
-	var names []string
+	var names [][]string
+	names = append(names, make([]string, 0))
 	for d.Duration < g.Target.Duration {
-		// TODO is this a good idea?
-		// could have a multidimensional slice - each layer is another level of concat
-		// would turn it into a double for loop problem
-		if len(names) == int(g.MaxConcat) {
-			var name string
-			if name, err = planConcat(p, names); err != nil {
-				return
+		for layer, group := range names {
+			if len(group) == int(g.MaxConcat) {
+				var name string
+				if name, err = planConcat(p, group); err != nil {
+					return
+				}
+
+				if len(names) == layer+1 {
+					names = append(names, []string{name})
+				} else {
+					names[layer+1] = append(names[layer+1], name)
+				}
+
+				names[layer] = make([]string, 0)
 			}
-			names = []string{name}
 		}
 
 		t := pullSeg()
@@ -328,7 +336,7 @@ func (p Project) Generate() (err error) {
 				return
 			}
 			d = d.Add(clipDuration)
-			names = append(names, name)
+			names[0] = append(names[0], name)
 		} else if t.Stack != nil {
 			var s []Source
 			if s, err = pullSource(int(t.Stack.Count)); err != nil {
@@ -348,7 +356,7 @@ func (p Project) Generate() (err error) {
 				return
 			}
 			d = d.Add(target)
-			names = append(names, name)
+			names[0] = append(names[0], name)
 		} else if t.Blend != nil {
 			var name string
 			var target Duration
@@ -357,13 +365,50 @@ func (p Project) Generate() (err error) {
 			}
 
 			d = d.Add(target)
-			names = append(names, name)
+			names[0] = append(names[0], name)
 		} else {
 			return fmt.Errorf("mashu.Project.Generate: invalid segment in generator configuration")
 		}
 	}
 
-	// TODO consolidate final concat, link root plan
+	for len(names) > 1 {
+		if len(names[0]) == int(g.MaxConcat) {
+			var name string
+			if name, err = planConcat(p, names[0]); err != nil {
+				return
+			}
+			names[1] = append(names[1], name)
+			names = names[1:]
+		} else if len(names[0])+len(names[1]) <= int(g.MaxConcat) {
+			names[1] = append(names[1], names[0]...)
+			names = names[1:]
+		} else {
+			split := len(names[1]) - (int(g.MaxConcat) - len(names[0]))
+			names[0] = append(names[1][split:], names[0]...)
+			names[1] = names[1][:split]
+		}
+	}
+
+	var rootPlan string
+	if len(names[0]) == 1 {
+		rootPlan = names[0][0]
+	} else if len(names[0]) > 1 {
+		if rootPlan, err = planConcat(p, names[0]); err != nil {
+			return
+		}
+	} else {
+		return fmt.Errorf("mashu.Project.Generate: unable to determine root plan")
+		return
+	}
+
+	if err = os.Symlink(filepath.Join("plan", rootPlan+".json"),
+		filepath.Join(p.Path, "plan.json")); err != nil {
+		return
+	}
+	if err = os.Symlink(filepath.Join("render", rootPlan+"."+strings.ToLower(p.Format.Format)),
+		filepath.Join(p.Path, "output."+strings.ToLower(p.Format.Format))); err != nil {
+		return
+	}
 
 	return
 }
