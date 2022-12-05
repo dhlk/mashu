@@ -287,6 +287,7 @@ func planClip(p Project, g PlanGeneratorParameters, target Duration, s Source) (
 }
 
 func (p Project) Generate() (err error) {
+	rand.Seed(time.Now().UnixNano())
 	var g PlanGeneratorParameters
 	if err = decodeJsonFromFile(filepath.Join(p.Path, "generator.json"), &g); err != nil {
 		return
