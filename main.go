@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"path/filepath"
 	"strings"
@@ -18,6 +20,11 @@ var (
 
 func catalogMain(c Catalog, args []string) (err error) {
 	for _, arg := range args {
+		if _, err = c.Lookup(arg); err == nil || errors.Is(err, fs.ErrNotExist) {
+			err = nil
+			continue
+		}
+
 		var s Source
 		if s, err = buildSource(arg); err != nil {
 			return fmt.Errorf("mashu: error building source for '%s': %w", arg, err)
