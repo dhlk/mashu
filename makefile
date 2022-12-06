@@ -1,6 +1,7 @@
 INTERNAL := \
 	blend.py \
 	demon-slayer-scrolls.blend \
+	macros.vim \
 	mashu
 
 BINARYLINK := mashu

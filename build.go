@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 func mpv(path string) {
@@ -18,8 +19,28 @@ func mpv(path string) {
 		path).Start()
 }
 
-func vim(path string) error {
-	cmd := exec.Command("vim", path)
+func locateMacros() (macros string, err error) {
+	if err = executableError; err != nil {
+		return
+	}
+
+	var target string
+	if target, err = filepath.EvalSymlinks(executable); err != nil {
+		return
+	}
+
+	macros = filepath.Join(filepath.Dir(target), "macros.vim")
+
+	return
+}
+
+func vim(path string) (err error) {
+	var macroFile string
+	if macroFile, err = locateMacros(); err != nil {
+		return
+	}
+
+	cmd := exec.Command("vim", "-S", macroFile, path)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
