@@ -20,7 +20,9 @@ var (
 
 func catalogMain(c Catalog, args []string) (err error) {
 	for _, arg := range args {
-		if _, err = c.Lookup(arg); err == nil || errors.Is(err, fs.ErrNotExist) {
+		if _, err = c.Lookup(arg); errors.Is(err, fs.ErrNotExist) {
+			err = nil
+		} else {
 			err = nil
 			continue
 		}
