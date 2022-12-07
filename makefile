@@ -1,8 +1,9 @@
 INTERNAL := \
 	blend.py \
 	demon-slayer-scrolls.blend \
-	macros.vim \
-	mashu
+	macros.vim
+
+INTERNALBINARY := mashu
 
 BINARYLINK := mashu
 
@@ -24,7 +25,8 @@ MASHUSRC := \
 all: mashu
 
 install: all
-	install -Dm755 -t "$(DESTDIR)/$(PREFIX)/lib/mashu" $(INTERNAL)
+	install -Dm644 -t "$(DESTDIR)/$(PREFIX)/lib/mashu" $(INTERNAL)
+	install -Dm755 -t "$(DESTDIR)/$(PREFIX)/lib/mashu" $(INTERNALBINARY)
 	install -d $(DESTDIR)/$(PREFIX)/bin
 	for tg in $(BINARYLINK); do \
 		ln -s /$(PREFIX)/lib/mashu/$$tg $(DESTDIR)/$(PREFIX)/bin/$$tg; \
