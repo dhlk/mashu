@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-// TODO random generation should microsecond align; start and duration
-
 // assumes inputs have already been validated
 func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (err error) {
 	args := make([]string, 0)
