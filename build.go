@@ -11,12 +11,12 @@ import (
 	"path/filepath"
 )
 
-func mpv(path string) {
-	exec.Command("mpv",
+func mpv(path ...string) {
+	exec.Command("mpv", append([]string{
 		"--player-operation-mode=pseudo-gui",
 		"--loop=inf",
-		"--loop-playlist=inf",
-		path).Start()
+		"--loop-playlist=inf"},
+		path...)...).Start()
 }
 
 func locateMacros() (macros string, err error) {
@@ -34,13 +34,14 @@ func locateMacros() (macros string, err error) {
 	return
 }
 
-func vim(path string) (err error) {
+func vim(path ...string) (err error) {
 	var macroFile string
 	if macroFile, err = locateMacros(); err != nil {
 		return
 	}
 
-	cmd := exec.Command("vim", "-S", macroFile, path)
+	cmd := exec.Command("vim", append([]string{
+		"-S", macroFile, "--"}, path...)...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -126,57 +127,68 @@ func addTracksFromVideo(path string, s *Source) (err error) {
 	return
 }
 
-func buildSource(path string) (s Source, err error) {
-	mpv(path)
+func buildSources(paths ...string) (s []Source, err error) {
+	mpv(paths...)
 
-	s.Key = path
+	names := make([]string, len(paths))
+	s = make([]Source, len(paths))
 
-	var m3u []string
-	if m3u, err = getM3uEntries(path); err == nil {
-		if len(m3u) == 0 {
-			err = fmt.Errorf("empty m3u")
+	for i, path := range paths {
+		s[i].Key = path
+
+		var m3u []string
+		if m3u, err = getM3uEntries(path); err == nil {
+			if len(m3u) == 0 {
+				err = fmt.Errorf("empty m3u")
+				return
+			}
+			if err = addTracksFromVideo(m3u[0], &s[i]); err != nil {
+				return
+			}
+		}
+		if errors.Is(err, ErrNoM3UHeader) {
+			err = nil
+			s[i].Video = &Track{}
+			s[i].Audio = &Track{}
+			s[i].Subtitle = &Track{}
+			s[i].Regions = []TaggedRegion{TaggedRegion{}}
+		} else if err != nil {
 			return
 		}
-		if err = addTracksFromVideo(m3u[0], &s); err != nil {
+
+		var f *os.File
+		if f, err = os.CreateTemp("", "mashu-build-source-*.json"); err != nil {
+			return
+		}
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		names[i] = f.Name()
+		fmt.Fprintln(f, path)
+		encoder := json.NewEncoder(f)
+		encoder.SetIndent("", "\t")
+		if err = encoder.Encode(s[i]); err != nil {
+			return
+		}
+		if err = f.Close(); err != nil {
 			return
 		}
 	}
-	if errors.Is(err, ErrNoM3UHeader) {
-		err = nil
-		s.Video = &Track{}
-		s.Audio = &Track{}
-		s.Subtitle = &Track{}
-	} else if err != nil {
+
+	if err = vim(names...); err != nil {
 		return
 	}
 
-	var f *os.File
-	if f, err = os.CreateTemp("", "mashu-build-source-*.json"); err != nil {
-		return
-	}
-	defer f.Close()
-	defer os.Remove(f.Name())
-
-	fmt.Fprintln(f, path)
-	encoder := json.NewEncoder(f)
-	encoder.SetIndent("", "\t")
-	if err = encoder.Encode(s); err != nil {
-		return
-	}
-	if err = f.Close(); err != nil {
-		return
+	for i, name := range names {
+		if err = decodeJsonFromFile(name, &s[i]); err != nil {
+			return
+		}
 	}
 
-	if err = vim(f.Name()); err != nil {
-		return
-	}
-
-	if err = decodeJsonFromFile(f.Name(), &s); err != nil {
-		return
-	}
-
-	if err = s.Valid(); err != nil {
-		return
+	for _, src := range s {
+		if err = src.Valid(); err != nil {
+			return
+		}
 	}
 
 	return

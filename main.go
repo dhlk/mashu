@@ -19,6 +19,8 @@ var (
 )
 
 func catalogMain(c Catalog, args []string) (err error) {
+	targets := make([]string, 0)
+
 	for _, arg := range args {
 		if _, err = c.Lookup(arg); errors.Is(err, fs.ErrNotExist) {
 			err = nil
@@ -27,14 +29,19 @@ func catalogMain(c Catalog, args []string) (err error) {
 			continue
 		}
 
-		var s Source
-		if s, err = buildSource(arg); err != nil {
-			return fmt.Errorf("mashu: error building source for '%s': %w", arg, err)
-		}
+		targets = append(targets, arg)
+	}
+
+	var sources []Source
+	if sources, err = buildSources(targets...); err != nil {
+		return fmt.Errorf("mashu: error building sources: %w", err)
+	}
+	for i, s := range sources {
 		if err = c.Create(s); err != nil {
-			return fmt.Errorf("mashu: error cataloging source for '%s': %w", arg, err)
+			return fmt.Errorf("mashu: error cataloging source for '%s': %w", targets[i], err)
 		}
 	}
+
 	return
 }
 
