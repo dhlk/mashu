@@ -32,6 +32,10 @@ func catalogMain(c Catalog, args []string) (err error) {
 		targets = append(targets, arg)
 	}
 
+	if len(targets) == 0 {
+		return
+	}
+
 	var sources []Source
 	if sources, err = buildSources(targets...); err != nil {
 		return fmt.Errorf("mashu: error building sources: %w", err)
