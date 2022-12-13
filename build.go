@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -127,33 +128,36 @@ func addTracksFromVideo(path string, s *Source) (err error) {
 	return
 }
 
-func buildSources(paths ...string) (s []Source, err error) {
-	mpv(paths...)
+func buildSources(paths ...string) (sources []Source, err error) {
+	names := make([]string, 0)
+	mpvPaths := make([]string, 0)
 
-	names := make([]string, len(paths))
-	s = make([]Source, len(paths))
-
-	for i, path := range paths {
-		s[i].Key = path
+	for _, path := range paths {
+		var s Source
+		s.Key = path
 
 		var m3u []string
 		if m3u, err = getM3uEntries(path); err == nil {
 			if len(m3u) == 0 {
-				err = fmt.Errorf("empty m3u")
-				return
+				log.Printf("mashu.buildSources: skipping %s: empty m3u", path)
+				continue
 			}
-			if err = addTracksFromVideo(m3u[0], &s[i]); err != nil {
-				return
+			if err = addTracksFromVideo(m3u[0], &s); err != nil {
+				log.Printf("mashu.buildSources: skipping %s: %v", path, err)
+				err = nil
+				continue
 			}
 		}
 		if errors.Is(err, ErrNoM3UHeader) {
 			err = nil
-			s[i].Video = &Track{}
-			s[i].Audio = &Track{}
-			s[i].Subtitle = &Track{}
-			s[i].Regions = []TaggedRegion{TaggedRegion{}}
+			s.Video = &Track{}
+			s.Audio = &Track{}
+			s.Subtitle = &Track{}
+			s.Regions = []TaggedRegion{TaggedRegion{}}
 		} else if err != nil {
-			return
+			log.Printf("mashu.buildSources: skipping %s: %v", path, err)
+			err = nil
+			continue
 		}
 
 		var f *os.File
@@ -163,11 +167,12 @@ func buildSources(paths ...string) (s []Source, err error) {
 		defer f.Close()
 		defer os.Remove(f.Name())
 
-		names[i] = f.Name()
+		names = append(names, f.Name())
+		mpvPaths = append(mpvPaths, path)
 		fmt.Fprintln(f, path)
 		encoder := json.NewEncoder(f)
 		encoder.SetIndent("", "\t")
-		if err = encoder.Encode(s[i]); err != nil {
+		if err = encoder.Encode(s); err != nil {
 			return
 		}
 		if err = f.Close(); err != nil {
@@ -175,18 +180,26 @@ func buildSources(paths ...string) (s []Source, err error) {
 		}
 	}
 
+	if len(names) == 0 {
+		return
+	}
+
+	mpv(mpvPaths...)
 	if err = vim(names...); err != nil {
 		return
 	}
 
-	for i, name := range names {
-		if err = decodeJsonFromFile(name, &s[i]); err != nil {
+	for _, name := range names {
+		var s Source
+		if err = decodeJsonFromFile(name, &s); err != nil {
+			log.Printf("mashu.buildSources: unable to import %s: %v", name, err)
 			return
 		}
+		sources = append(sources, s)
 	}
 
-	for _, src := range s {
-		if err = src.Valid(); err != nil {
+	for _, s := range sources {
+		if err = s.Valid(); err != nil {
 			return
 		}
 	}
