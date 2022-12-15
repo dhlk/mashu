@@ -193,7 +193,7 @@ func buildSources(paths ...string) (sources []Source, err error) {
 		var s Source
 		if err = decodeJsonFromFile(name, &s); err != nil {
 			log.Printf("mashu.buildSources: unable to import %s: %v", name, err)
-			return
+			continue
 		}
 		sources = append(sources, s)
 	}
