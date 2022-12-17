@@ -130,6 +130,8 @@ func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (er
 		"-map_chapters", "-1",
 		string(o))
 
-	err = ffmpeg(ctx, args...)
+	if err = ffmpeg(ctx, args...); err != nil {
+		return fmt.Errorf("mashu.renderClip: error rendering %s: %w", o, err)
+	}
 	return
 }
