@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+// TODO linked mkv inputs - linked segments are skipped
+
 // assumes inputs have already been validated
 func renderClip(ctx context.Context, f Format, s Source, r Region, o Output) (err error) {
 	args := make([]string, 0)
