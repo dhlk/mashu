@@ -168,7 +168,7 @@ func (p Project) executePlanConcat(concat PlanConcat, output Output) (err error)
 		}
 	}
 
-	if err = renderConcat(context.TODO(), output, inputs); err != nil {
+	if err = renderConcat(context.TODO(), p.Format, output, inputs); err != nil {
 		return
 	}
 
